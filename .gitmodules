@@ -1,3 +1,4 @@
 [submodule "lib/Sakaar-Struct"]
 	path = lib/Sakaar-Struct
 	url = https://github.com/Sakaar-BlockChain/Sakaar-Struct
+	branch = main
