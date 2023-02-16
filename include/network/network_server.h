@@ -2,7 +2,6 @@
 #define NETWORK_SERVER_H
 
 #include "network_conf.h"
-
 struct network_server {
     struct network_conf *config;
 
@@ -10,7 +9,12 @@ struct network_server {
 
     int (*_send)(const struct string_st *);
 
+#ifdef WIN32
+    WSADATA wsa;
+    unsigned _socket;
+#else
     int _socket;
+#endif
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
     struct list_st *hosts;
@@ -31,6 +35,5 @@ void network_server_connect(struct network_server *);
 
 void network_server_get(struct network_server *, const struct string_st *, char, struct string_st *);
 void network_server_send(struct network_server *, const struct string_st *, char);
-
 
 #endif //NETWORK_SERVER_H

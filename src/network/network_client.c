@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "network.h"
 
 struct network_client *network_client_new() {
@@ -21,9 +22,12 @@ void network_client_connect(struct network_client *res, struct string_st *addres
     struct sockaddr_in server_address = {};
     server_address.sin_family = res->config->domain;
     server_address.sin_port = htons(res->config->port);
-    server_address.sin_addr.s_addr = (int) res->config->interface;
-
+#ifdef WIN32
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+#else
+    server_address.sin_addr.s_addr = (int) res->config->_interface;
     inet_pton(res->config->domain, address->data, &server_address.sin_addr);
+#endif
     int _con = connect(res->socket, (struct sockaddr *) &server_address, sizeof(server_address));
     res->connected = (_con == 0);
 }
@@ -40,5 +44,11 @@ void network_client_send(struct network_client *res, const struct string_st *msg
     network_send(res->socket, msg, NET_REQUEST | NET_SEND | flag);
 }
 void network_client_close(struct network_client *res) {
+    if (!res->connected) return;
+#ifdef WIN32
+    closesocket(res->socket);
+#else
     close(res->socket);
+#endif
+    res->connected = 0;
 }

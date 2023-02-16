@@ -1,7 +1,7 @@
+#include <stdio.h>
 #include "network.h"
 
 int is_running = 0;
-
 struct network_server *network_server_new(
         struct network_conf *config,
         void (*_get)(const struct string_st *str, struct string_st *res),
@@ -12,8 +12,18 @@ struct network_server *network_server_new(
     res->_get = _get;
     res->_send = _send;
 
+#ifdef WIN32
+    if (WSAStartup(MAKEWORD(2,2),&res->wsa) != 0) {
+        perror("Failed to start WSA...\n");
+    }
+#endif
+
     res->_socket = socket(config->domain, config->service, config->protocol);
+#ifdef WIN32
+    char option = 1;
+#else
     int option = 1;
+#endif
     setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     res->server_address = (struct sockaddr_in) {};
     res->client_address = (struct sockaddr_in) {};
@@ -24,7 +34,7 @@ struct network_server *network_server_new(
         exit(1);
     }
     res->server_address.sin_family = config->domain;
-    res->server_address.sin_addr.s_addr = htonl(config->interface);
+    res->server_address.sin_addr.s_addr = htonl(config->_interface);
     res->server_address.sin_port = htons(config->port);
     if ((bind(res->_socket, (struct sockaddr *) &res->server_address, sizeof(res->server_address))) < 0) {
         perror("Failed to bind socket...\n");
@@ -42,8 +52,11 @@ void network_server_free(struct network_server *res) {
     skr_free(res);
 }
 
-
+#ifdef WIN32
+void network_server_accept(unsigned client_socket, struct network_server *server) {
+#else
 void network_server_accept(int client_socket, struct network_server *server) {
+#endif
     char flag = 0;
     char flag_res = 0;
     int send_next = 0;
@@ -90,13 +103,29 @@ void network_server_accept(int client_socket, struct network_server *server) {
         flag_res |= NET_RESPONSE;
         network_send(client_socket, res_msg, flag_res);
     }
+#ifdef WIN32
+    closesocket(client_socket);
+#else
     close(client_socket);
+#endif
     if ((flag & NET_SEND) && send_next) {
         network_server_send(server, msg, flag);
     }
     string_free(msg);
     string_free(res_msg);
 }
+
+#ifdef WIN32
+DWORD WINAPI network_server_init(void *arg) {
+    struct network_server *server = arg;
+    int address_length = sizeof(server->client_address);
+    while (is_running) {
+        unsigned client_socket = accept(server->_socket, (struct sockaddr *) &server->client_address, &address_length);
+        network_server_accept(client_socket, server);
+    }
+    return 0;
+}
+#else
 void *network_server_init(void *arg) {
     struct network_server *server = arg;
     socklen_t address_length = sizeof(server->client_address);
@@ -106,13 +135,23 @@ void *network_server_init(void *arg) {
     }
     return NULL;
 }
+#endif
 
 void network_server_start(struct network_server *res) {
+#ifdef WIN32
+    if (is_running) return;
+    is_running = 1;
+    HANDLE thread = CreateThread(NULL, 0, network_server_init, res, 0, NULL);
+    if(thread){
+        network_server_connect(res);
+    }
+#else
     if (is_running) return;
     is_running = 1;
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, network_server_init, res);
     network_server_connect(res);
+#endif
 }
 void network_server_close() {
     is_running = 0;
