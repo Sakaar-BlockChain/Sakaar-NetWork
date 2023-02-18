@@ -16,46 +16,35 @@ size_t get_length(const char *_msg) {
     return length;
 }
 
+void network_send(socket_t socket, const struct string_st *msg, char flag) {
+    { // Header of packet
+        char *header = skr_malloc(16);
+        set_length(header, msg->size);
+        header[0] = flag;
+        send(socket, header, 16, 0);
+        skr_free(header);
+    }
 #ifdef WIN32
-void network_send(unsigned socket, const struct string_st *msg, char flag) {
-    { // Header of packet
-        char *header = skr_malloc(16);
-        set_length(header, msg->size);
-        header[0] = flag;
-        send(socket, header, 16, 0);
-        skr_free(header);
-    }
-    send(socket, msg->data, (int)msg->size, 0);
-}
-void network_read(unsigned socket, struct string_st *msg, char *flag) {
-    { // Header of packet
-        char *header = skr_malloc(16);
-        recv(socket, header, 16, 0);
-        *flag = header[0];
-        string_resize(msg, get_length(header));
-        skr_free(header);
-    }
-    recv(socket, msg->data, (int)msg->size, 0);
-}
+    send(socket, msg->data, (int) msg->size, 0);
 #else
-void network_send(int socket, const struct string_st *msg, char flag) {
-    { // Header of packet
-        char *header = skr_malloc(16);
-        set_length(header, msg->size);
-        header[0] = flag;
-        send(socket, header, 16, 0);
-        skr_free(header);
-    }
     send(socket, msg->data, msg->size, 0);
+#endif
 }
-void network_read(int socket, struct string_st *msg, char *flag) {
+void network_read(socket_t socket, struct string_st *msg, char *flag) {
     { // Header of packet
         char *header = skr_malloc(16);
+#ifdef WIN32
+        recv(socket, header, 16, 0);
+#else
         read(socket, header, 16);
+#endif
         *flag = header[0];
         string_resize(msg, get_length(header));
         skr_free(header);
     }
+#ifdef WIN32
+    recv(socket, msg->data, (int) msg->size, 0);
+#else
     read(socket, msg->data, msg->size);
-}
 #endif
+}

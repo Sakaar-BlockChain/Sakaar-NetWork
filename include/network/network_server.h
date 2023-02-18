@@ -11,10 +11,8 @@ struct network_server {
 
 #ifdef WIN32
     WSADATA wsa;
-    unsigned _socket;
-#else
-    int _socket;
 #endif
+    socket_t _socket;
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
     struct list_st *hosts;

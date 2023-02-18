@@ -6,11 +6,7 @@
 struct network_client {
     struct network_conf *config;
     int connected;
-#ifdef WIN32
-    unsigned socket;
-#else
-    int socket;
-#endif
+    socket_t socket;
 };
 
 

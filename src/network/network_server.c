@@ -52,11 +52,7 @@ void network_server_free(struct network_server *res) {
     skr_free(res);
 }
 
-#ifdef WIN32
-void network_server_accept(unsigned client_socket, struct network_server *server) {
-#else
-void network_server_accept(int client_socket, struct network_server *server) {
-#endif
+void network_server_accept(socket_t client_socket, struct network_server *server) {
     char flag = 0;
     char flag_res = 0;
     int send_next = 0;

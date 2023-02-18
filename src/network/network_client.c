@@ -23,7 +23,7 @@ void network_client_connect(struct network_client *res, struct string_st *addres
     server_address.sin_family = res->config->domain;
     server_address.sin_port = htons(res->config->port);
 #ifdef WIN32
-    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_address.sin_addr.s_addr = inet_addr(address->data);
 #else
     server_address.sin_addr.s_addr = (int) res->config->_interface;
     inet_pton(res->config->domain, address->data, &server_address.sin_addr);

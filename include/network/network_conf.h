@@ -15,8 +15,17 @@
 #ifdef WIN32
 #include "winsock2.h"
 #include "windows.h"
+#define socket_t unsigned
+#else
+#include "sys/socket.h"
+#include "netinet/in.h"
+#include "arpa/inet.h"
+#include "pthread.h"
+#define socket_t int
+#endif
 
 struct network_conf {
+
     short domain;
     int service;
     int protocol;
@@ -25,25 +34,8 @@ struct network_conf {
     int backlog;
 };
 
-void network_send(unsigned, const struct string_st *, char);
-void network_read(unsigned, struct string_st *, char *);
-#else
-#include "sys/socket.h"
-#include "netinet/in.h"
-#include "arpa/inet.h"
-#include "pthread.h"
+void network_send(socket_t, const struct string_st *, char);
+void network_read(socket_t, struct string_st *, char *);
 
-struct network_conf {
-    int domain;
-    int service;
-    int protocol;
-    unsigned long _interface;
-    int port;
-    int backlog;
-};
-
-void network_send(int, const struct string_st *, char);
-void network_read(int, struct string_st *, char *);
-#endif
 
 #endif //NETWORK_CONF_H
