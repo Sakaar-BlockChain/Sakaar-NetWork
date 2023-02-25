@@ -134,16 +134,14 @@ void *network_server_init(void *arg) {
 #endif
 
 void network_server_start(struct network_server *res) {
-#ifdef WIN32
     if (is_running) return;
     is_running = 1;
-    HANDLE thread = CreateThread(NULL, 0, network_server_init, res, 0, NULL);
-    if(thread){
+#ifdef WIN32
+    HANDLE server_thread = CreateThread(NULL, 0, network_server_init, res, 0, NULL);
+    if(server_thread){
         network_server_connect(res);
     }
 #else
-    if (is_running) return;
-    is_running = 1;
     pthread_t server_thread;
     pthread_create(&server_thread, NULL, network_server_init, res);
     network_server_connect(res);
