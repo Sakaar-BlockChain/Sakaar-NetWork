@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include "network.h"
 
-void config_request_get(const struct string_st *data, struct string_st *response) {
-    if (response == NULL) return;
-    if (string_is_null(data)) return string_clear(response);
+int config_request_get(const struct string_st *data, struct string_st *response) {
+    if (response == NULL) return 0;
+    string_clear(response);
+    if (string_is_null(data)) return 0;
     printf("data get : %s\n", data->data);
     string_set_str(response, "321", 3);
+    return 0;
 }
 int config_request_send(const struct string_st *data) {
     if (string_is_null(data)) return 0;

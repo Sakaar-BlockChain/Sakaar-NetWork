@@ -4,7 +4,7 @@
 int is_running = 0;
 struct network_server *network_server_new(
         struct network_conf *config,
-        void (*_get)(const struct string_st *str, struct string_st *res),
+        int (*_get)(const struct string_st *str, struct string_st *res),
         int (*_send)(const struct string_st *str)) {
     struct network_server *res = skr_malloc(sizeof(struct network_server));
 
@@ -22,6 +22,8 @@ struct network_server *network_server_new(
 #ifdef WIN32
     char option = 1;
 #else
+    res->mutex = skr_malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(res->mutex, NULL);
     int option = 1;
 #endif
     setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
@@ -47,8 +49,14 @@ struct network_server *network_server_new(
     return res;
 }
 void network_server_free(struct network_server *res) {
+    if (res == NULL) return;
     if (is_running) is_running = 0;
     list_free(res->hosts);
+#ifndef WIN32
+    pthread_mutex_destroy(res->mutex);
+    skr_free(res->mutex);
+    pthread_mutex_init(res->mutex, NULL);
+#endif
     skr_free(res);
 }
 
@@ -91,7 +99,8 @@ void network_server_accept(socket_t client_socket, struct network_server *server
             if (server->_send != NULL) send_next = server->_send(msg);
         }
         if (flag & NET_GET) {
-            if (server->_get != NULL) server->_get(msg, res_msg);
+            if (server->_get != NULL && server->_get(msg, res_msg))
+                flag_res |= NET_ERROR;
         }
     }
     if (flag & NET_GET) {
@@ -125,7 +134,10 @@ DWORD WINAPI network_server_init(void *arg) {
 void *network_server_init(void *arg) {
     struct network_server *server = arg;
     socklen_t address_length = sizeof(server->client_address);
-    while (is_running) {
+    while (1) {
+        pthread_mutex_lock(server->mutex);
+        if (!is_running) break;
+        pthread_mutex_unlock(server->mutex);
         int client_socket = accept(server->_socket, (struct sockaddr *) &server->client_address, &address_length);
         network_server_accept(client_socket, server);
     }
@@ -147,8 +159,14 @@ void network_server_start(struct network_server *res) {
     network_server_connect(res);
 #endif
 }
-void network_server_close() {
+void network_server_close(struct network_server *res) {
+#ifndef WIN32
+    pthread_mutex_lock(res->mutex);
+#endif
     is_running = 0;
+#ifndef WIN32
+    pthread_mutex_unlock(res->mutex);
+#endif
 }
 
 void network_server_connected(struct network_server *res) {
@@ -193,3 +211,6 @@ void network_server_send(struct network_server *res, const struct string_st *msg
     }
     network_client_free(client);
 }
+
+
+

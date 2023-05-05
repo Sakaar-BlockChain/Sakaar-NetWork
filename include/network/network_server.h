@@ -5,12 +5,14 @@
 struct network_server {
     struct network_conf *config;
 
-    void (*_get)(const struct string_st *, struct string_st *);
+    int (*_get)(const struct string_st *, struct string_st *);
 
     int (*_send)(const struct string_st *);
 
 #ifdef WIN32
     WSADATA wsa;
+#else
+    pthread_mutex_t *mutex;
 #endif
     socket_t _socket;
     struct sockaddr_in server_address;
@@ -20,13 +22,13 @@ struct network_server {
 
 struct network_server *network_server_new(
         struct network_conf *,
-        void (*)(const struct string_st *, struct string_st *),
+        int (*)(const struct string_st *, struct string_st *),
         int (*)(const struct string_st *));
 void network_server_free(struct network_server *);
 
 
 void network_server_start(struct network_server *);
-void network_server_close();
+void network_server_close(struct network_server *);
 
 void network_server_connected(struct network_server *);
 void network_server_connect(struct network_server *);

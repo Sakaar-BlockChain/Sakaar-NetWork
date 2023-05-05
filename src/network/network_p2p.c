@@ -2,7 +2,7 @@
 
 struct network_p2p *network_p2p_new(
         struct network_conf config,
-        void (*_get)(const struct string_st *str, struct string_st *res),
+        int (*_get)(const struct string_st *str, struct string_st *res),
         int (*_send)(const struct string_st *str)) {
     struct network_p2p *res = skr_malloc(sizeof(struct network_p2p));
     res->config = config;
@@ -10,6 +10,7 @@ struct network_p2p *network_p2p_new(
     return res;
 }
 void network_p2p_free(struct network_p2p *res) {
+    if (res == NULL) return;
     network_server_free(res->server);
     skr_free(res);
 }
@@ -18,12 +19,12 @@ void network_p2p_free(struct network_p2p *res) {
 void network_p2p_start(struct network_p2p *res) {
     network_server_start(res->server);
 }
-void network_p2p_close() {
-    network_server_close();
+void network_p2p_close(struct network_p2p *res) {
+    network_server_close(res->server);
 }
 
-void network_p2p_set_hosts(struct network_p2p *res, const struct string_st *tlv) {
-    list_set_tlv_self(res->server->hosts, tlv, STRING_TYPE);
+int network_p2p_set_hosts(struct network_p2p *res, const struct string_st *tlv) {
+    return list_set_tlv_self(res->server->hosts, tlv, STRING_TYPE);
 }
 void network_p2p_get_hosts(const struct network_p2p *res, struct string_st *tlv) {
     list_get_tlv(res->server->hosts, tlv);
