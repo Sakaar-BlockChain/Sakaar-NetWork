@@ -30,10 +30,10 @@ void network_server_free(struct network_server *);
 void network_server_start(struct network_server *);
 void network_server_close(struct network_server *);
 
-void network_server_connected(struct network_server *);
+int network_server_connected(struct network_server *);
 void network_server_connect(struct network_server *);
 
-void network_server_get(struct network_server *, const struct string_st *, char, struct string_st *);
+int network_server_get(struct network_server *, const struct string_st *, char, struct string_st *);
 void network_server_send(struct network_server *, const struct string_st *, char);
 
 #endif //NETWORK_SERVER_H

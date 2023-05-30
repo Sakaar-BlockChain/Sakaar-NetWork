@@ -169,15 +169,16 @@ void network_server_close(struct network_server *res) {
 #endif
 }
 
-void network_server_connected(struct network_server *res) {
+int network_server_connected(struct network_server *res) {
     struct string_st *msg = string_new();
     struct string_st *res_msg = string_new();
-    network_server_get(res, msg, NET_CONNECTIONS, res_msg);
-    if (res_msg->size != 0) {
-        list_set_tlv_self(res->hosts, res_msg, STRING_TYPE);
-    }
+    int result = 0;
+
+    if (network_server_get(res, msg, NET_CONNECTIONS, res_msg) == 0)
+        result = list_set_tlv_self(res->hosts, res_msg, STRING_TYPE);
     string_free(msg);
     string_free(res_msg);
+    return result;
 }
 void network_server_connect(struct network_server *res) {
     list_add_new(res->hosts, STRING_TYPE);
@@ -188,18 +189,21 @@ void network_server_connect(struct network_server *res) {
     string_free(msg);
 }
 
-void network_server_get(struct network_server *res, const struct string_st *msg, char flag, struct string_st *res_msg) {
-    char res_flag;
+int network_server_get(struct network_server *res, const struct string_st *msg, char flag, struct string_st *res_msg) {
     struct network_client *client = network_client_new();
+    char res_flag = NET_ERROR;
+
     network_client_set_config(client, res->config);
     for (size_t i = 0; i < res->hosts->size; i++) {
         res_flag = 0;
         network_client_connect(client, res->hosts->data[i]->data);
         network_client_get(client, msg, flag, res_msg, &res_flag);
         network_client_close(client);
-        if ((res_flag & NET_ERROR) == 0) return network_client_free(client);
+        if ((res_flag & NET_ERROR) == 0) break;
     }
-    string_clear(res_msg);
+    if (res_flag & NET_ERROR) string_clear(res_msg);
+    network_client_free(client);
+    return (res_flag & NET_ERROR) != 0;
 }
 void network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
     struct network_client *client = network_client_new();

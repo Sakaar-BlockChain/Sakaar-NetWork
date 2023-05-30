@@ -20,10 +20,10 @@ void network_p2p_close(struct network_p2p *);
 
 int network_p2p_set_hosts(struct network_p2p *, const struct string_st *);
 void network_p2p_get_hosts(const struct network_p2p *, struct string_st *);
-void network_p2p_connected(struct network_p2p *);
+int network_p2p_connected(struct network_p2p *);
 
-void network_p2p_get(struct network_p2p *, const struct string_st *, struct string_st *);
-void network_p2p_send(struct network_p2p *, const struct string_st *);
+int network_p2p_get(struct network_p2p *, const struct string_st *, struct string_st *);
+int network_p2p_send(struct network_p2p *, const struct string_st *);
 
 
 #endif //NETWORK_P2P_H
