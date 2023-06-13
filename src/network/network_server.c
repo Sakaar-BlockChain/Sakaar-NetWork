@@ -77,7 +77,7 @@ void network_server_accept(socket_t client_socket, struct network_server *server
                 memcpy(msg->data, data, msg->size);
             }
             send_next = 1;
-            for (size_t i = 0; i < server->hosts->size; i++) {
+            for (size_t i = 0, size = server->hosts->size; i < size; i++) {
                 if (string_cmp(msg, server->hosts->data[i]->data) == 0) {
                     send_next = 0;
                     break;
@@ -194,7 +194,7 @@ int network_server_get(struct network_server *res, const struct string_st *msg, 
     char res_flag = NET_ERROR;
 
     network_client_set_config(client, res->config);
-    for (size_t i = 0; i < res->hosts->size; i++) {
+    for (size_t i = 0, size = res->hosts->size; i < size; i++) {
         res_flag = 0;
         network_client_connect(client, res->hosts->data[i]->data);
         network_client_get(client, msg, flag, res_msg, &res_flag);
@@ -208,7 +208,7 @@ int network_server_get(struct network_server *res, const struct string_st *msg, 
 void network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
     struct network_client *client = network_client_new();
     network_client_set_config(client, res->config);
-    for (size_t i = 0; i < res->hosts->size; i++) {
+    for (size_t i = 0, size = res->hosts->size; i < size; i++) {
         network_client_connect(client, res->hosts->data[i]->data);
         network_client_send(client, msg, flag);
         network_client_close(client);
