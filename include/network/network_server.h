@@ -17,14 +17,13 @@ struct network_server {
     socket_t _socket;
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
-    struct list_st *hosts;
+    struct address_list_st hosts;
 };
 
-struct network_server *network_server_new(
-        struct network_conf *,
+void network_server_data_init(struct network_server *, struct network_conf *,
         int (*)(const struct string_st *, struct string_st *),
         int (*)(const struct string_st *));
-void network_server_free(struct network_server *);
+void network_server_data_free(struct network_server *);
 
 
 void network_server_start(struct network_server *);

@@ -1,16 +1,13 @@
 #include <stdio.h>
 #include "network.h"
 
-struct network_client *network_client_new() {
-    struct network_client *res = skr_malloc(sizeof(struct network_client));
+void network_client_data_init(struct network_client *res) {
     res->config = NULL;
     res->connected = 0;
     res->socket = 0;
-    return res;
 }
-void network_client_free(struct network_client *res) {
+void network_client_data_free(struct network_client *res) {
     if (res->connected) network_client_close(res);
-    skr_free(res);
 }
 
 void network_client_set_config(struct network_client *res, struct network_conf *config) {

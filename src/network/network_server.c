@@ -2,12 +2,9 @@
 #include "network.h"
 
 int is_running = 0;
-struct network_server *network_server_new(
-        struct network_conf *config,
+void network_server_data_init(struct network_server *res, struct network_conf *config,
         int (*_get)(const struct string_st *str, struct string_st *res),
         int (*_send)(const struct string_st *str)) {
-    struct network_server *res = skr_malloc(sizeof(struct network_server));
-
     res->config = config;
     res->_get = _get;
     res->_send = _send;
@@ -22,14 +19,14 @@ struct network_server *network_server_new(
 #ifdef WIN32
     char option = 1;
 #else
-    res->mutex = skr_malloc(sizeof(pthread_mutex_t));
+    res->mutex = malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(res->mutex, NULL);
     int option = 1;
 #endif
     setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     res->server_address = (struct sockaddr_in) {};
     res->client_address = (struct sockaddr_in) {};
-    res->hosts = list_new();
+    address_list_data_init(&res->hosts);
 
     if (res->_socket == 0) {
         perror("Failed to connect socket...\n");
@@ -46,67 +43,68 @@ struct network_server *network_server_new(
         perror("Failed to start listening...\n");
         exit(1);
     }
-    return res;
 }
-void network_server_free(struct network_server *res) {
+void network_server_data_free(struct network_server *res) {
     if (res == NULL) return;
     if (is_running) is_running = 0;
-    list_free(res->hosts);
+    address_list_data_free(&res->hosts);
 #ifndef WIN32
     pthread_mutex_destroy(res->mutex);
-    skr_free(res->mutex);
+    free(res->mutex);
     pthread_mutex_init(res->mutex, NULL);
 #endif
-    skr_free(res);
 }
 
 void network_server_accept(socket_t client_socket, struct network_server *server) {
-    char flag = 0;
-    char flag_res = 0;
+    struct string_st res_msg;
+    struct string_st msg;
     int send_next = 0;
-    struct string_st *msg = string_new();
-    struct string_st *res_msg = string_new();
+    char flag_res = 0;
+    char flag = 0;
 
-    network_read(client_socket, msg, &flag);
+    string_data_init(&res_msg);
+    string_data_init(&msg);
+
+    network_read(client_socket, &msg, &flag);
     if (flag & NET_CONNECTIONS) {
         flag_res |= NET_CONNECTIONS;
         if (flag & NET_SEND) {
-            if (msg->size == 0) {
+            if (msg.size == 0) {
                 char *data = inet_ntoa(server->client_address.sin_addr);
-                string_resize(msg, strlen(data));
-                memcpy(msg->data, data, msg->size);
+                string_resize(&msg, strlen(data));
+                memcpy(msg.data, data, msg.size);
             }
             send_next = 1;
-            for (size_t i = 0, size = server->hosts->size; i < size; i++) {
-                if (string_cmp(msg, server->hosts->data[i]->data) == 0) {
+            for (size_t i = 0, size = server->hosts.size; i < size; i++) {
+                if (string_cmp(&msg, server->hosts.addresses[i]) == 0) {
                     send_next = 0;
                     break;
                 }
             }
             if (send_next) {
-                list_add_new(server->hosts, STRING_TYPE);
-                string_set(server->hosts->data[server->hosts->size - 1]->data, msg);
+                address_list_resize(&server->hosts, server->hosts.size + 1);
+                string_set(server->hosts.addresses[server->hosts.size - 1], &msg);
             }
         }
         if (flag & NET_GET) {
-            list_get_tlv(server->hosts, res_msg);
+            address_list_get_tlv(&server->hosts, &res_msg);
         }
     }
 
     if (flag & NET_DATA) {
         flag_res |= NET_DATA;
         if (flag & NET_SEND) {
-            if (server->_send != NULL) send_next = server->_send(msg);
+            if (server->_send != NULL) send_next = server->_send(&msg);
         }
         if (flag & NET_GET) {
-            if (server->_get != NULL && server->_get(msg, res_msg))
+            if (server->_get != NULL && server->_get(&msg, &res_msg))
                 flag_res |= NET_ERROR;
         }
     }
     if (flag & NET_GET) {
         flag_res |= NET_GET;
         flag_res |= NET_RESPONSE;
-        network_send(client_socket, res_msg, flag_res);
+        network_send(client_socket, &res_msg, flag_res);
     }
 #ifdef WIN32
     closesocket(client_socket);
@@ -114,10 +112,10 @@ void network_server_accept(socket_t client_socket, struct network_server *server
     close(client_socket);
 #endif
     if ((flag & NET_SEND) && send_next) {
-        network_server_send(server, msg, flag);
+        network_server_send(server, &msg, flag);
     }
-    string_free(msg);
-    string_free(res_msg);
+    string_data_free(&msg);
+    string_data_free(&res_msg);
 }
 
 #ifdef WIN32
@@ -170,50 +168,60 @@ void network_server_close(struct network_server *res) {
 }
 
 int network_server_connected(struct network_server *res) {
-    struct string_st *msg = string_new();
-    struct string_st *res_msg = string_new();
+    struct string_st res_msg;
+    struct string_st msg;
     int result = 0;
 
-    if (network_server_get(res, msg, NET_CONNECTIONS, res_msg) == 0)
-        result = list_set_tlv_self(res->hosts, res_msg, STRING_TYPE);
-    string_free(msg);
-    string_free(res_msg);
+    string_data_init(&res_msg);
+    string_data_init(&msg);
+
+    if (network_server_get(res, &msg, NET_CONNECTIONS, &res_msg) == 0)
+        result = address_list_set_tlv(&res->hosts, &res_msg);
+    string_data_free(&msg);
+    string_data_free(&res_msg);
     return result;
 }
 void network_server_connect(struct network_server *res) {
-    list_add_new(res->hosts, STRING_TYPE);
-    string_set_str(res->hosts->data[res->hosts->size - 1]->data, "127.0.0.1", 9);
+    address_list_resize(&res->hosts, res->hosts.size + 1);
+    string_set_str(res->hosts.addresses[res->hosts.size - 1], "127.0.0.1", 9);
 
-    struct string_st *msg = string_new();
-    network_server_send(res, msg, NET_CONNECTIONS);
-    string_free(msg);
+    struct string_st msg;
+    string_data_init(&msg);
+    network_server_send(res, &msg, NET_CONNECTIONS);
+    string_data_free(&msg);
 }
 
 int network_server_get(struct network_server *res, const struct string_st *msg, char flag, struct string_st *res_msg) {
-    struct network_client *client = network_client_new();
+    struct network_client client;
     char res_flag = NET_ERROR;
 
-    network_client_set_config(client, res->config);
-    for (size_t i = 0, size = res->hosts->size; i < size; i++) {
+    network_client_data_init(&client);
+    network_client_set_config(&client, res->config);
+
+    for (size_t i = 0, size = res->hosts.size; i < size; i++) {
         res_flag = 0;
-        network_client_connect(client, res->hosts->data[i]->data);
-        network_client_get(client, msg, flag, res_msg, &res_flag);
-        network_client_close(client);
+        network_client_connect(&client, res->hosts.addresses[i]);
+        network_client_get(&client, msg, flag, res_msg, &res_flag);
+        network_client_close(&client);
         if ((res_flag & NET_ERROR) == 0) break;
     }
+
     if (res_flag & NET_ERROR) string_clear(res_msg);
-    network_client_free(client);
+    network_client_data_free(&client);
     return (res_flag & NET_ERROR) != 0;
 }
 void network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
-    struct network_client *client = network_client_new();
-    network_client_set_config(client, res->config);
-    for (size_t i = 0, size = res->hosts->size; i < size; i++) {
-        network_client_connect(client, res->hosts->data[i]->data);
-        network_client_send(client, msg, flag);
-        network_client_close(client);
+    struct network_client client;
+
+    network_client_data_init(&client);
+    network_client_set_config(&client, res->config);
+
+    for (size_t i = 0, size = res->hosts.size; i < size; i++) {
+        network_client_connect(&client, res->hosts.addresses[i]);
+        network_client_send(&client, msg, flag);
+        network_client_close(&client);
     }
-    network_client_free(client);
+    network_client_data_free(&client);
 }
 
 

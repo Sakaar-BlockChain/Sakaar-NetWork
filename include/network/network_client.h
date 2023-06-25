@@ -10,8 +10,8 @@ struct network_client {
 };
 
 
-struct network_client *network_client_new();
-void network_client_free(struct network_client *);
+void network_client_data_init(struct network_client *);
+void network_client_data_free(struct network_client *);
 
 void network_client_set_config(struct network_client *, struct network_conf *);
 void network_client_connect(struct network_client *, struct string_st *);

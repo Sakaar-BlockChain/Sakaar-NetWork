@@ -18,11 +18,10 @@ size_t get_length(const char *_msg) {
 
 void network_send(socket_t socket, const struct string_st *msg, char flag) {
     { // Header of packet
-        char *header = skr_malloc(16);
+        char header[16];
         set_length(header, msg->size);
         header[0] = flag;
         send(socket, header, 16, 0);
-        skr_free(header);
     }
 #ifdef WIN32
     send(socket, msg->data, (int) msg->size, 0);
@@ -32,7 +31,7 @@ void network_send(socket_t socket, const struct string_st *msg, char flag) {
 }
 void network_read(socket_t socket, struct string_st *msg, char *flag) {
     { // Header of packet
-        char *header = skr_malloc(16);
+        char header[16];
 #ifdef WIN32
         recv(socket, header, 16, 0);
 #else
@@ -40,7 +39,6 @@ void network_read(socket_t socket, struct string_st *msg, char *flag) {
 #endif
         *flag = header[0];
         string_resize(msg, get_length(header));
-        skr_free(header);
     }
 #ifdef WIN32
     recv(socket, msg->data, (int) msg->size, 0);

@@ -1,7 +1,7 @@
 #ifndef NETWORK_CONF_H
 #define NETWORK_CONF_H
 
-#include "struct.h"
+#include "basic.h"
 #include "unistd.h"
 
 #define NET_CONNECTIONS     0b00000001

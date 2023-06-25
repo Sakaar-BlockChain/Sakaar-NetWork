@@ -6,14 +6,13 @@
 
 struct network_p2p {
     struct network_conf config;
-    struct network_server *server;
+    struct network_server server;
 };
 
-struct network_p2p *network_p2p_new(
-        struct network_conf,
+void network_p2p_data_init(struct network_p2p *, struct network_conf,
         int (*)(const struct string_st *, struct string_st *),
         int (*)(const struct string_st *));
-void network_p2p_free(struct network_p2p *);
+void network_p2p_data_free(struct network_p2p *);
 
 void network_p2p_start(struct network_p2p *);
 void network_p2p_close(struct network_p2p *);
