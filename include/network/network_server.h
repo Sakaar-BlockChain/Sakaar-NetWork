@@ -18,6 +18,8 @@ struct network_server {
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
     struct address_list_st hosts;
+
+    pthread_t thread;
 };
 
 void network_server_data_init(struct network_server *, struct network_conf *,
@@ -33,6 +35,6 @@ int network_server_connected(struct network_server *);
 void network_server_connect(struct network_server *);
 
 int network_server_get(struct network_server *, const struct string_st *, char, struct string_st *);
-void network_server_send(struct network_server *, const struct string_st *, char);
+int network_server_send(struct network_server *, const struct string_st *, char);
 
 #endif //NETWORK_SERVER_H

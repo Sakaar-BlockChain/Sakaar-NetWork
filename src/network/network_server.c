@@ -17,13 +17,16 @@ void network_server_data_init(struct network_server *res, struct network_conf *c
 
     res->_socket = socket(config->domain, config->service, config->protocol);
 #ifdef WIN32
-    char option = 1;
+    DWORD timeout = timeout_in_seconds * 1000;
+    setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR | SO_RCVTIMEO, (const char*)&tv, sizeof(DWORD));
 #else
     res->mutex = malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(res->mutex, NULL);
-    int option = 1;
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    setsockopt(res->_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
 #endif
-    setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     res->server_address = (struct sockaddr_in) {};
     res->client_address = (struct sockaddr_in) {};
     address_list_data_init(&res->hosts);
@@ -104,7 +107,7 @@ void network_server_accept(socket_t client_socket, struct network_server *server
     if (flag & NET_GET) {
         flag_res |= NET_GET;
         flag_res |= NET_RESPONSE;
-        network_send(client_socket, &res_msg, flag_res);
+        network_send(client_socket, &res_msg, flag_res, NULL);
     }
 #ifdef WIN32
     closesocket(client_socket);
@@ -148,12 +151,11 @@ void network_server_start(struct network_server *res) {
     is_running = 1;
 #ifdef WIN32
     HANDLE server_thread = CreateThread(NULL, 0, network_server_init, res, 0, NULL);
-    if(server_thread){
+    if (server_thread) {
         network_server_connect(res);
     }
 #else
-    pthread_t server_thread;
-    pthread_create(&server_thread, NULL, network_server_init, res);
+    pthread_create(&res->thread, NULL, network_server_init, res);
     network_server_connect(res);
 #endif
 }
@@ -164,6 +166,7 @@ void network_server_close(struct network_server *res) {
     is_running = 0;
 #ifndef WIN32
     pthread_mutex_unlock(res->mutex);
+    pthread_join(res->thread, NULL);
 #endif
 }
 
@@ -210,18 +213,22 @@ int network_server_get(struct network_server *res, const struct string_st *msg, 
     network_client_data_free(&client);
     return (res_flag & NET_ERROR) != 0;
 }
-void network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
+int network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
     struct network_client client;
+    char _res_flag = NET_ERROR, res_flag = NET_ERROR;
 
     network_client_data_init(&client);
     network_client_set_config(&client, res->config);
 
     for (size_t i = 0, size = res->hosts.size; i < size; i++) {
+        _res_flag = 0;
         network_client_connect(&client, res->hosts.addresses[i]);
-        network_client_send(&client, msg, flag);
+        network_client_send(&client, msg, flag, &_res_flag);
         network_client_close(&client);
+        if ((_res_flag & NET_ERROR) == 0) res_flag = _res_flag;
     }
     network_client_data_free(&client);
+    return (res_flag & NET_ERROR) != 0;
 }
 
 

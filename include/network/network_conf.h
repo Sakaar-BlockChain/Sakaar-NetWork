@@ -34,7 +34,7 @@ struct network_conf {
     int backlog;
 };
 
-void network_send(socket_t, const struct string_st *, char);
+void network_send(socket_t, const struct string_st *, char, char *);
 void network_read(socket_t, struct string_st *, char *);
 
 

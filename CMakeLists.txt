@@ -14,10 +14,10 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
 MESSAGE(STATUS "Created: ${PROJECT_NAME}_lib")
 
 target_link_libraries(${PROJECT_NAME}_lib PUBLIC Sakaar_Struct_lib)
-if(WIN32)
+if (WIN32)
     target_link_libraries(${PROJECT_NAME}_lib PUBLIC ws2_32)
     target_link_libraries(${PROJECT_NAME}_lib PUBLIC wsock32)
-endif()
+endif ()
 
 add_executable(${PROJECT_NAME} main.c)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${PROJECT_NAME}_lib)

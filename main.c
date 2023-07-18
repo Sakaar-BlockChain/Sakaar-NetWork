@@ -15,7 +15,7 @@ int config_request_send(const struct string_st *data) {
     return 1;
 }
 
-int main(){
+int main() {
     struct network_conf config = (struct network_conf) {AF_INET, SOCK_STREAM, 0, INADDR_ANY, 1240, 20};
     struct network_p2p network;
 
@@ -26,10 +26,10 @@ int main(){
     string_data_init(&str);
     string_data_init(&res);
 
-    network_p2p_start(&network);
-
+//    network_p2p_start(&network);
+    network_server_connect(&network.server);
     string_set_str(&str, "123", 3);
-    while(1){
+    while(1) {
         network_p2p_get(&network, &str, &res);
         printf("res : %s\n", res.data);
     }

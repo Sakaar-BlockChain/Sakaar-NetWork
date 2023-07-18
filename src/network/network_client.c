@@ -14,6 +14,15 @@ void network_client_set_config(struct network_client *res, struct network_conf *
     if (res == NULL || config == NULL) return;
     res->config = config;
     res->socket = socket(config->domain, config->service, config->protocol);
+#ifdef WIN32
+    DWORD timeout = timeout_in_seconds * 1000;
+    setsockopt(res->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(DWORD));
+#else
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    setsockopt(res->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+#endif
 }
 void network_client_connect(struct network_client *res, struct string_st *address) {
     struct sockaddr_in server_address = {};
@@ -33,12 +42,14 @@ void network_client_get(struct network_client *res, const struct string_st *msg,
         *res_flag |= NET_ERROR;
         return;
     }
-    network_send(res->socket, msg, NET_REQUEST | NET_GET | flag);
+    *res_flag = 0;
+    network_send(res->socket, msg, NET_REQUEST | NET_GET | flag, res_flag);
+    if (*res_flag & NET_ERROR) return;
     network_read(res->socket, res_msg, res_flag);
 }
-void network_client_send(struct network_client *res, const struct string_st *msg, char flag) {
+void network_client_send(struct network_client *res, const struct string_st *msg, char flag, char *res_flag) {
     if (!res->connected) return;
-    network_send(res->socket, msg, NET_REQUEST | NET_SEND | flag);
+    network_send(res->socket, msg, NET_REQUEST | NET_SEND | flag, res_flag);
 }
 void network_client_close(struct network_client *res) {
     if (!res->connected) return;

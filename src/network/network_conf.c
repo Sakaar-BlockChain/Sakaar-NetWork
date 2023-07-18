@@ -16,33 +16,74 @@ size_t get_length(const char *_msg) {
     return length;
 }
 
-void network_send(socket_t socket, const struct string_st *msg, char flag) {
+void network_send(socket_t socket, const struct string_st *msg, char flag, char *res_flag) {
     { // Header of packet
         char header[16];
         set_length(header, msg->size);
         header[0] = flag;
-        send(socket, header, 16, 0);
+        if (send(socket, header, 16, 0) != 16) {
+            if (res_flag != NULL) *res_flag = NET_ERROR;
+            return;
+        }
     }
 #ifdef WIN32
-    send(socket, msg->data, (int) msg->size, 0);
+    size_t size = 0, res;
+    while (size != msg->size) {
+        res = send(socket, msg->data + size, (int)(msg->size - size), 0);
+        if (res <= 0) {
+            if (res_flag != NULL) *res_flag = NET_ERROR;
+            return;
+        }
+        size += res;
+    }
 #else
-    send(socket, msg->data, msg->size, 0);
+    size_t size = 0, res;
+    while (size != msg->size) {
+        res = send(socket, msg->data + size, msg->size - size, 0);
+        if (res <= 0) {
+            if (res_flag != NULL) *res_flag = NET_ERROR;
+            return;
+        }
+        size += res;
+    }
 #endif
 }
 void network_read(socket_t socket, struct string_st *msg, char *flag) {
     { // Header of packet
         char header[16];
 #ifdef WIN32
-        recv(socket, header, 16, 0);
+        if (recv(socket, header, 16, 0) != 16) {
+            *flag = NET_ERROR;
+            return;
+        }
 #else
-        read(socket, header, 16);
+        if (recv(socket, header, 16, 0) != 16) {
+            *flag = NET_ERROR;
+            return;
+        }
 #endif
         *flag = header[0];
         string_resize(msg, get_length(header));
     }
 #ifdef WIN32
-    recv(socket, msg->data, (int) msg->size, 0);
+    size_t size = 0, res;
+    while (size != msg->size) {
+        res = recv(socket, msg->data + size, (int)(msg->size - size), 0);
+        if (res <= 0) {
+            *flag = NET_ERROR;
+            return;
+        }
+        size += res;
+    }
 #else
-    read(socket, msg->data, msg->size);
+    size_t size = 0, res;
+    while (size != msg->size) {
+        res = recv(socket, msg->data + size, msg->size - size, 0);
+        if (res <= 0) {
+            *flag = NET_ERROR;
+            return;
+        }
+        size += res;
+    }
 #endif
 }

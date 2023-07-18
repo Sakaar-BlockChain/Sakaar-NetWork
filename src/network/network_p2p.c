@@ -33,6 +33,5 @@ int network_p2p_get(struct network_p2p *res, const struct string_st *msg, struct
     return network_server_get(&res->server, msg, NET_DATA, res_msg);
 }
 int network_p2p_send(struct network_p2p *res, const struct string_st *msg) {
-    network_server_send(&res->server, msg, NET_DATA);
-    return ERR_SUCCESS;
+    return network_server_send(&res->server, msg, NET_DATA);
 }
