@@ -18,15 +18,22 @@ void network_server_data_init(struct network_server *res, struct network_conf *c
     res->_socket = socket(config->domain, config->service, config->protocol);
 #ifdef WIN32
     DWORD timeout = timeout_in_seconds * 1000;
-    setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR | SO_RCVTIMEO, (const char*)&tv, sizeof(DWORD));
+    setsockopt(res->_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(DWORD));
+
+    char option = 1;
 #else
     res->mutex = malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(res->mutex, NULL);
+
     struct timeval tv;
     tv.tv_sec = 2;
     tv.tv_usec = 0;
     setsockopt(res->_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+
+    int option = 1;
 #endif
+    setsockopt(res->_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
     res->server_address = (struct sockaddr_in) {};
     res->client_address = (struct sockaddr_in) {};
     address_list_data_init(&res->hosts);
