@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include "network.h"
 
-int is_running = 0;
+int8_t is_running = 0;
 void network_server_data_init(struct network_server *res, struct network_conf *config,
-        int (*_get)(const struct string_st *str, struct string_st *res),
-        int (*_send)(const struct string_st *str)) {
+                              int8_t (*_get)(const struct string_st *str, struct string_st *res),
+                              int8_t (*_send)(const struct string_st *str)) {
     res->config = config;
     res->_get = _get;
     res->_send = _send;
@@ -68,9 +68,9 @@ void network_server_data_free(struct network_server *res) {
 void network_server_accept(socket_t client_socket, struct network_server *server) {
     struct string_st res_msg;
     struct string_st msg;
-    int send_next = 0;
-    char flag_res = 0;
-    char flag = 0;
+    int8_t send_next = 0;
+    int8_t flag_res = 0;
+    int8_t flag = 0;
 
     string_data_init(&res_msg);
     string_data_init(&msg);
@@ -177,10 +177,10 @@ void network_server_close(struct network_server *res) {
 #endif
 }
 
-int network_server_connected(struct network_server *res) {
+int8_t network_server_connected(struct network_server *res) {
     struct string_st res_msg;
     struct string_st msg;
-    int result = 0;
+    int8_t result = 0;
 
     string_data_init(&res_msg);
     string_data_init(&msg);
@@ -201,9 +201,9 @@ void network_server_connect(struct network_server *res) {
     string_data_free(&msg);
 }
 
-int network_server_get(struct network_server *res, const struct string_st *msg, char flag, struct string_st *res_msg) {
+int8_t network_server_get(struct network_server *res, const struct string_st *msg, int8_t flag, struct string_st *res_msg) {
     struct network_client client;
-    char res_flag = NET_ERROR;
+    int8_t res_flag = NET_ERROR;
 
     network_client_data_init(&client);
     network_client_set_config(&client, res->config);
@@ -218,11 +218,11 @@ int network_server_get(struct network_server *res, const struct string_st *msg, 
 
     if (res_flag & NET_ERROR) string_clear(res_msg);
     network_client_data_free(&client);
-    return (res_flag & NET_ERROR) != 0;
+    return (int8_t) ((res_flag & NET_ERROR) != 0);
 }
-int network_server_send(struct network_server *res, const struct string_st *msg, char flag) {
+int8_t network_server_send(struct network_server *res, const struct string_st *msg, int8_t flag) {
     struct network_client client;
-    char _res_flag = NET_ERROR, res_flag = NET_ERROR;
+    int8_t _res_flag = NET_ERROR, res_flag = NET_ERROR;
 
     network_client_data_init(&client);
     network_client_set_config(&client, res->config);
@@ -235,7 +235,7 @@ int network_server_send(struct network_server *res, const struct string_st *msg,
         if ((_res_flag & NET_ERROR) == 0) res_flag = _res_flag;
     }
     network_client_data_free(&client);
-    return (res_flag & NET_ERROR) != 0;
+    return (int8_t) ((res_flag & NET_ERROR) != 0);
 }
 
 

@@ -5,9 +5,9 @@
 struct network_server {
     struct network_conf *config;
 
-    int (*_get)(const struct string_st *, struct string_st *);
+    int8_t (*_get)(const struct string_st *, struct string_st *);
 
-    int (*_send)(const struct string_st *);
+    int8_t (*_send)(const struct string_st *);
 
 #ifdef WIN32
     WSADATA wsa;
@@ -23,18 +23,18 @@ struct network_server {
 };
 
 void network_server_data_init(struct network_server *, struct network_conf *,
-        int (*)(const struct string_st *, struct string_st *),
-        int (*)(const struct string_st *));
+                              int8_t (*)(const struct string_st *, struct string_st *),
+                              int8_t (*)(const struct string_st *));
 void network_server_data_free(struct network_server *);
 
 
 void network_server_start(struct network_server *);
 void network_server_close(struct network_server *);
 
-int network_server_connected(struct network_server *);
+int8_t network_server_connected(struct network_server *);
 void network_server_connect(struct network_server *);
 
-int network_server_get(struct network_server *, const struct string_st *, char, struct string_st *);
-int network_server_send(struct network_server *, const struct string_st *, char);
+int8_t network_server_get(struct network_server *, const struct string_st *, int8_t, struct string_st *);
+int8_t network_server_send(struct network_server *, const struct string_st *, int8_t);
 
 #endif //NETWORK_SERVER_H

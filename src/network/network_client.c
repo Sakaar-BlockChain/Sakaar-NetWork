@@ -35,9 +35,9 @@ void network_client_connect(struct network_client *res, struct string_st *addres
     inet_pton(res->config->domain, address->data, &server_address.sin_addr);
 #endif
     int _con = connect(res->socket, (struct sockaddr *) &server_address, sizeof(server_address));
-    res->connected = (_con == 0);
+    res->connected = (int8_t) (_con == 0);
 }
-void network_client_get(struct network_client *res, const struct string_st *msg, char flag, struct string_st *res_msg, char *res_flag) {
+void network_client_get(struct network_client *res, const struct string_st *msg, int8_t flag, struct string_st *res_msg, int8_t *res_flag) {
     if (!res->connected) {
         *res_flag |= NET_ERROR;
         return;
@@ -47,7 +47,7 @@ void network_client_get(struct network_client *res, const struct string_st *msg,
     if (*res_flag & NET_ERROR) return;
     network_read(res->socket, res_msg, res_flag);
 }
-void network_client_send(struct network_client *res, const struct string_st *msg, char flag, char *res_flag) {
+void network_client_send(struct network_client *res, const struct string_st *msg, int8_t flag, int8_t *res_flag) {
     if (!res->connected) return;
     network_send(res->socket, msg, NET_REQUEST | NET_SEND | flag, res_flag);
 }

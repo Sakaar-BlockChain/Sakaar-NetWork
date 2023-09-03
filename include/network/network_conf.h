@@ -27,15 +27,15 @@
 struct network_conf {
 
     short domain;
-    int service;
-    int protocol;
+    int8_t service;
+    int8_t protocol;
     unsigned long _interface;
-    int port;
-    int backlog;
+    int32_t port;
+    int8_t backlog;
 };
 
-void network_send(socket_t, const struct string_st *, char, char *);
-void network_read(socket_t, struct string_st *, char *);
+void network_send(socket_t, const struct string_st *, int8_t, int8_t *);
+void network_read(socket_t, struct string_st *, int8_t *);
 
 
 #endif //NETWORK_CONF_H

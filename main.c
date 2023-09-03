@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include "network.h"
 
-int config_request_get(const struct string_st *data, struct string_st *response) {
-    if (response == NULL) return 0;
+int8_t config_request_get(const struct string_st *data, struct string_st *response) {
+    if (response == NULL) return 1;
     string_clear(response);
     if (string_is_null(data)) return 0;
     printf("data get : %s\n", data->data);
     string_set_str(response, "321", 3);
     return 0;
 }
-int config_request_send(const struct string_st *data) {
+int8_t config_request_send(const struct string_st *data) {
     if (string_is_null(data)) return 0;
     printf("data send : %s\n", data->data);
     return 1;
